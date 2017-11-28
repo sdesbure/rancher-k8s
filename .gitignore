@@ -1,2 +1,6 @@
 ### Ansible ###
 *.retry
+
+
+### Git ###
+*.orig
