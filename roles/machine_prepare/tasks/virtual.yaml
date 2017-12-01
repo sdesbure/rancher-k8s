@@ -71,6 +71,8 @@
     nics: "{{ net_list }}"
     state: present
     key_name: "{{ default_key_name }}"
+    security_groups:
+      - k8s
   with_items: "{{ servers }}"
 
 - name: add floating IP to VM
