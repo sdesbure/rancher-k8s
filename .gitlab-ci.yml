@@ -5,8 +5,9 @@ stages:
   - check
 
 variables:
+  pod: pod1
   target_folder: /opt/r8s
-  scenario: k8s-nosdn-nofeature-noha
+  openstack_creds: /etc/bolla/openstack_openrc
 
 .syntax_checking: &syntax_docker
   stage: test
@@ -33,52 +34,33 @@ ansible_linting:
 # Deploy
 .deploy_pod: &deploy_pod
   stage: deploy
+  only:
+    - schedules
+    - triggers
+    - web
   tags:
     - sina
     - shell
-  only:
-    - master
   script:
-    - ssh ${pod}.opnfv.fr "sudo mkdir -p /opt/r8s ;
-                           sudo chown -R ubuntu.ubuntu /opt/r8s"
+    - ssh ${pod}.opnfv.fr "sudo mkdir -p ${target_folder} ;
+                           sudo chown -R ubuntu.ubuntu ${target_folder}"
     - cd vars
     - "git archive \
        --remote=git@gitlab.forge.orange-labs.fr:opnfv/TerraHouat.git \
        HEAD:config \
-       ${pod}-k8s.yaml \
+       k8s.yaml \
+       | tar -x"
+    - "git archive \
+       --remote=git@gitlab.forge.orange-labs.fr:opnfv/TerraHouat.git \
+       HEAD:config \
+       idf-k8s.yaml \
        | tar -x"
     - ln -s ${pod}-k8s.yaml pdf.yaml
+    - ln -s idf-${pod}-k8s.yaml idf.yaml
     - cd ..
     - "rsync --cvs-exclude -e ssh -avz  \
       --delete-after . \
       ${pod}.opnfv.fr:${target_folder}"
-    - ssh ${pod}.opnfv.fr "cd /opt/r8s; sudo ./run.sh"
-
-deploy_pod1:
-  variables:
-    pod: pod1
-  environment:
-    name: pod1
-    url: https://10.1.0.9/
-  when: manual
-  <<: *deploy_pod
-
-deploy_pod2:
-  variables:
-    pod: pod2
-    scenario: os-nosdn-nofeature-noha
-  environment:
-    name: pod2
-    url: https://10.2.0.9/
-  when: manual
-  <<: *deploy_pod
-
-deploy_pod4:
-  variables:
-    pod: pod4
-    scenario: os-nosdn-nofeature-ha
-  environment:
-    name: pod4
-    url: https://10.4.0.9/
-  when: manual
-  <<: *deploy_pod
+    - ssh ${pod}.opnfv.fr "cd ${target_folder};\
+      openstack_creds=${openstack_creds} sudo -E ./run.sh"
+    - ./trigger_oom.sh

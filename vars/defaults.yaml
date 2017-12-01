@@ -1,0 +1,6 @@
+---
+external_network: ext-net
+default_image: debian-9
+default_key_name: jumphost
+default_user: debian
+r8s_etc_path: /etc/r8s

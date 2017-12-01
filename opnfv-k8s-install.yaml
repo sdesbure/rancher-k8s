@@ -1,4 +1,19 @@
 ---
 - hosts: k8s-cluster
+  gather_facts: "no"
+  vars_files:
+    - "vars/defaults.yaml"
+  pre_tasks:
+    - name: wait for nodes to be reachable
+      local_action: >
+        shell ansible -i {{ r8s_etc_path  }}/inventory.yaml
+        -m ping {{ inventory_hostname }}
+      register: ping
+      until: ping.rc == 0
+      retries: 40
+      delay: 5
+      when: "True"
+    - name: Gathering facts
+      setup:
   roles:
     - role: k8s-prepare

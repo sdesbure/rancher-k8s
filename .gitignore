@@ -4,3 +4,8 @@
 
 ### Git ###
 *.orig
+
+### OPNFV ###
+vars/idf.yaml
+vars/pdf.yaml
+

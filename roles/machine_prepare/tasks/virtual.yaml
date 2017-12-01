@@ -1,0 +1,96 @@
+---
+- name: get the list of server to create
+  set_fact:
+    servers:
+      "{{ nodes | selectattr('node.vendor', 'eq', 'openstack') | list }}"
+
+- name: create security group
+  os_security_group:
+    state: present
+    name: k8s
+    description: security group for kubernetes installation
+
+# TODO: give rules a lot more stringent
+- name: create security group ingress rule
+  os_security_group_rule:
+    security_group: k8s
+    state: present
+    remote_ip_prefix: 0.0.0.0/0
+    direction: ingress
+
+- name: create networks
+  os_network:
+    state: present
+    name: "{{ item.key }}"
+  with_dict: "{{ net_config }}"
+
+- name: create subnetworks
+  os_subnet:
+    state: present
+    network_name: "{{ item.key }}"
+    name: "{{ item.key }}-subnet"
+    cidr: "{{ item.value.network }}/{{ item.value.mask }}"
+    enable_dhcp: "yes"
+  with_dict: "{{ net_config }}"
+
+- name: make a list of created subnets
+  set_fact:
+    subnet_names:
+      "{{ net_config.keys() |
+          map('regex_replace', '^(.*)$', '\\1-subnet') | list }}"
+
+- name: create router
+  os_router:
+    state: present
+    name: k8s
+    network: "{{ external_network }}"
+    interfaces: "{{ subnet_names }}"
+
+# TODO supposed that memory and disk size always end with a 'G'
+- name: create needed flavors
+  os_nova_flavor:
+    vcpus: "{{item.node.cpus}}"
+    ram: "{{ (item.node.memory[:-1] | int) * 1024 }}"
+    disk: "{{ item.disks.0.disk_capacity[:-1] }}"
+    state: present
+    name: "opnfv.{{ item.node.cpus }}_cores_{{item.node.memory }}_RAM_\
+           {{ item.disks.0.disk_capacity }}_disk"
+  with_items: "{{ servers }}"
+
+- name: generate net list for nics variable
+  set_fact:
+    net_list: "{{ (net_list|default([])) + [{'net-name': item.key }] }}"
+  with_dict: "{{ net_config }}"
+
+- name: create servers
+  os_server:
+    flavor: "opnfv.{{ item.node.cpus }}_cores_{{item.node.memory }}_RAM_\
+            {{ item.disks[0].disk_capacity }}_disk"
+    image: "{{ default_image }}"
+    name: "{{ item.name }}"
+    nics: "{{ net_list }}"
+    state: present
+    key_name: "{{ default_key_name }}"
+  with_items: "{{ servers }}"
+
+- name: add floating IP to VM
+  os_floating_ip:
+    server: "{{ item.name }}"
+    state: present
+    wait: "yes"
+  with_items: "{{ servers }}"
+  register: floating
+
+- name: retrieve floating ip ip address
+  set_fact:
+    ips: "{{ (ips|default({})) |
+             combine({item.0.name: item.1.floating_ip.floating_ip_address}) }}"
+  with_together:
+    - "{{ servers }}"
+    - "{{ floating.results }}"
+
+- name: set default user
+  set_fact:
+    users: "{{ (users|default({})) |
+              combine({item.name: default_user}) }}"
+  with_items: "{{ servers }}"

@@ -13,37 +13,7 @@ if [[ $EUID -ne 0 ]]; then
     exit -1
 fi
 
-echo "
-#-------------------------------------------------------------------------------
-# install ansible
-#-------------------------------------------------------------------------------
-"
-
-# remove old ansible
-if pip freeze|grep ansible=; then
-    pip uninstall -y ansible
-fi
-# remove folders
-rm -rf /usr/local/bin/ansible*
-rm -rf /etc/ansible/
-# install ansible from package
-apt update
-apt install -y software-properties-common python-setuptools \
-    python-dev libffi-dev libssl-dev git python-pip
-pip install --upgrade pip cryptography ansible netaddr
-mkdir -p /etc/ansible
-echo "jumphost ansible_connection=local" > /etc/ansible/hosts
-
-# put default values for ansible
-cat > /etc/ansible/ansible.cfg <<EOF
-[defaults]
-forks=50
-host_key_checking = False
-[ssh_connection]
-pipelining=True
-EOF
-
-cd /opt/r8s
+cd ${target_folder}
 
 echo "
 #-------------------------------------------------------------------------------
@@ -51,6 +21,7 @@ echo "
 #-------------------------------------------------------------------------------
 "
 
+source ${openstack_creds}
 ansible-playbook opnfv-prepare.yaml
 
 echo "
@@ -59,7 +30,7 @@ echo "
 #-------------------------------------------------------------------------------
 "
 
-ansible-playbook -i /etc/r8s/inventory  opnfv-k8s-install.yaml
+ansible-playbook -i /etc/r8s/inventory.yaml opnfv-k8s-install.yaml
 
 echo "
 #-------------------------------------------------------------------------------

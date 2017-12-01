@@ -1,0 +1,25 @@
+---
+all:
+  children:
+    k8s-cluster:
+      children:
+        jumphost:
+          hosts:
+            localhost:
+              ansible_connection: local
+        server:
+          hosts:
+{% for node in role2nodes['controller'] %}
+            {{ node }}:
+              ansible_ssh_host: {{ ips[node] }}
+              ansible_ssh_user: {{ users[node] }}
+              ip: {{ ips[node] }}
+{% endfor %}
+        node:
+          hosts:
+{% for node in role2nodes['compute'] %}
+            {{ node }}:
+              ansible_ssh_host: {{ ips[node] }}
+              ansible_ssh_user: {{ users[node] }}
+              ip: {{ ips[node] }}
+{% endfor %}

@@ -1,0 +1,30 @@
+---
+# Here we decide that all 'virtual' nodes are made with openstack
+# TODO: check this assumption is OK
+- import_tasks: virtual.yaml
+  when: nodes | map(attribute='node') |
+               selectattr('vendor', 'eq', 'openstack') | list | length > 0
+
+# Here we decide that all 'baremetal' nodes are made with bifrost previously
+# We only retrieve the result here
+- import_tasks: baremetal.yaml
+  when:
+    (nodes | map(attribute='node') |
+             selectattr('type', 'eq', 'baremetal') | list | length > 0) or
+    (nodes | map(attribute='node') |
+             selectattr('vendor', 'eq', 'libvirt') | list | length > 0)
+
+- name: get role nodes
+  set_fact:
+    role2nodes: "{{ xci.nodes_roles | role2nodes() }}"
+
+- name: create r8s directory
+  file:
+    path: "{{ r8s_etc_path }}"
+    state: directory
+
+- name: generate inventory
+  template:
+    src: inventory.yaml.j2
+    dest: "{{ r8s_etc_path }}/inventory.yaml"
+  when: ips is defined and users is defined

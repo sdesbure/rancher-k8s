@@ -1,0 +1,17 @@
+---
+- name: load bifrost output
+  include_vars:
+    file: "{{ bifrost_etc_path }}/bifrost_inventory.json"
+    name: bifrost
+
+- name: retrieve mgmt ip address
+  set_fact:
+    ips: "{{ (ips|default({})) |
+              combine({item.key: item.value.ipv4_address}) }}"
+  with_dict: "{{ bifrost }}"
+
+- name: set default user
+  set_fact:
+    users: "{{ (users|default({})) |
+              combine({item.key: 'root'}) }}"
+  with_dict: "{{ bifrost }}"
