@@ -55,8 +55,8 @@ deploy:
        HEAD:config \
        idf-k8s.yaml \
        | tar -x"
-    - ln -s ${pod}-k8s.yaml pdf.yaml
-    - ln -s idf-${pod}-k8s.yaml idf.yaml
+    - ln -s k8s.yaml pdf.yaml
+    - ln -s idf-k8s.yaml idf.yaml
     - cd ..
     - "rsync --cvs-exclude -e ssh -avz  \
       --delete-after . \
