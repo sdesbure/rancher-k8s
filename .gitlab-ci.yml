@@ -61,6 +61,5 @@ ansible_linting:
     - "rsync --cvs-exclude -e ssh -avz  \
       --delete-after . \
       ${pod}.opnfv.fr:${target_folder}"
-    - ssh ${pod}.opnfv.fr "cd ${target_folder};\
-      openstack_creds=${openstack_creds} sudo -E ./run.sh"
+    - ssh ${pod}.opnfv.fr "cd ${target_folder}; sudo -E ./run.sh"
     - ./trigger_oom.sh
