@@ -32,7 +32,7 @@ ansible_linting:
   <<: *syntax_docker
 
 # Deploy
-.deploy_pod: &deploy_pod
+deploy:
   stage: deploy
   only:
     - schedules
