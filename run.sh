@@ -4,6 +4,8 @@ set -o nounset
 set -o pipefail
 
 export ANSIBLE_STDOUT_CALLBACK=debug
+# Shouldn't be done <wut I'm too bad to figure out how to do it
+export openstack_creds=/etc/bolla/openstack_openrc
 
 #-------------------------------------------------------------------------------
 # Check run as root
