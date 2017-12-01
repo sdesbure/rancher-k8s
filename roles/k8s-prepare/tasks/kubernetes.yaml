@@ -79,8 +79,8 @@
       {{ system_project_id }}/stacks/{{ kube_stack_id }}"
   register: kube_stack
   until: >
-    (kube_stack.status == 200) and (kube_stack.json.state == "active")
-  retries: 60
+    (kube_stack.status == 200) and (kube_stack.json..healthState == "healthy")
+  retries: 120
   delay: 10
 
 - name: check if kubectl config exist
